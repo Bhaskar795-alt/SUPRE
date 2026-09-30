@@ -1,0 +1,7 @@
+{
+  "name": "GETO // TELEGRAM SYSTEM",
+  "description": "Dark cyber terminal dashboard and bot fleet matrix for the GETO Telegram ecosystem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
