@@ -4,13 +4,308 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GETO // TELEGRAM SYSTEM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="style.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --neon: #a000ff; --neon2: #ff006e; --green: #00ff9d;
+    --cyan: #00e5ff; --bg: #05000a; --text: #d4d4e8;
+    --mono: 'Share Tech Mono', monospace; --head: 'Orbitron', sans-serif;
+}
+body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--mono); min-height: 100vh;
+    overflow-x: hidden; padding: 15px;
+}
+#matrix-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -2; opacity: 0.3;
+}
+.scanlines-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 999;
+    background: repeating-linear-gradient(0deg,
+        rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px,
+        transparent 1px, transparent 3px);
+    opacity: 0.35;
+}
+.app-container { max-width: 1200px; margin: 0 auto; }
+.topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 20px; margin-bottom: 25px;
+    background: rgba(10,0,21,0.75); backdrop-filter: blur(10px);
+    border: 1px solid rgba(160,0,255,0.3); border-radius: 12px;
+    box-shadow: 0 0 30px rgba(160,0,255,0.2);
+    flex-wrap: wrap; gap: 10px;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.glitch {
+    font-family: var(--head); font-weight: 900; font-size: 1.4rem;
+    color: var(--green); text-shadow: 0 0 10px var(--green);
+}
+.brand { font-family: var(--head); font-weight: 900; letter-spacing: 2px; font-size: 1rem; }
+.nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.nav-links a {
+    color: #888; text-decoration: none; font-size: 0.75rem;
+    padding: 6px 12px; border-radius: 6px; letter-spacing: 1px;
+    transition: 0.3s; border: 1px solid transparent;
+}
+.nav-links a:hover { color: var(--green); text-shadow: 0 0 8px var(--green); }
+.nav-links a.active {
+    color: var(--green); background: rgba(0,255,157,0.08);
+    border: 1px solid var(--green); text-shadow: 0 0 8px var(--green);
+}
+.status-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 14px; background: rgba(0,255,157,0.08);
+    border: 1px solid var(--green); border-radius: 20px;
+    font-size: 0.75rem; color: var(--green); font-weight: 700;
+    letter-spacing: 1px;
+}
+.status-pill .dot {
+    width: 8px; height: 8px; background: var(--green);
+    border-radius: 50%; box-shadow: 0 0 10px var(--green);
+    animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.hero {
+    display: grid; grid-template-columns: 1.5fr 1fr;
+    gap: 40px; align-items: center;
+    padding: 40px 30px; margin-bottom: 25px;
+    background: rgba(10,0,21,0.6);
+    border: 1px solid rgba(160,0,255,0.3); border-radius: 16px;
+    backdrop-filter: blur(12px);
+}
+.pre-title { color: var(--green); font-size: 0.72rem; letter-spacing: 2px; margin-bottom: 12px; }
+.greet { color: #888; font-size: 0.85rem; margin-bottom: 8px; }
+.main-name {
+    font-family: var(--head); font-weight: 900; font-size: 3.5rem;
+    letter-spacing: 6px;
+    background: linear-gradient(90deg, var(--neon), var(--neon2), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+}
+.subtitle { color: var(--cyan); font-size: 0.95rem; margin-bottom: 18px; }
+.desc { color: #aaa; line-height: 1.7; font-size: 0.88rem; margin-bottom: 20px; }
+.hero-handles { display: flex; flex-wrap: wrap; gap: 10px; }
+.hero-handles a {
+    text-decoration: none; color: var(--cyan);
+    padding: 8px 16px; border: 1px solid rgba(0,229,255,0.4);
+    border-radius: 20px; font-size: 0.82rem; transition: 0.3s;
+}
+.hero-handles a:hover { background: rgba(0,229,255,0.1); box-shadow: 0 0 15px rgba(0,229,255,0.5); }
+.hero-handles a i { margin-right: 6px; }
+.hero-right { display: flex; justify-content: center; }
+.avatar-frame {
+    position: relative; width: 220px; height: 220px;
+    border: 2px solid var(--neon);
+    box-shadow: 0 0 30px rgba(160,0,255,0.6);
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle, rgba(160,0,255,0.15), rgba(10,0,21,0.9));
+}
+.text-avatar {
+    font-family: var(--head); font-weight: 900; font-size: 3rem;
+    letter-spacing: 6px;
+    background: linear-gradient(45deg, var(--green), var(--cyan), var(--neon2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.corner { position: absolute; width: 18px; height: 18px; border: 2px solid var(--green); }
+.corner.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.corner.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.corner.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+.corner.br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+.stats-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 1px; margin-bottom: 25px;
+    background: rgba(160,0,255,0.2);
+    border: 1px solid rgba(160,0,255,0.3);
+    border-radius: 12px; overflow: hidden;
+}
+.stat { background: rgba(10,0,21,0.85); padding: 18px 12px; text-align: center; }
+.stat-label { font-size: 0.68rem; color: #888; letter-spacing: 2px; margin-bottom: 8px; }
+.stat-val { font-family: var(--head); font-weight: 700; font-size: 1.05rem; color: var(--green); }
+.section {
+    padding: 30px 25px; margin-bottom: 25px;
+    background: rgba(10,0,21,0.6);
+    border: 1px solid rgba(160,0,255,0.3); border-radius: 16px;
+    backdrop-filter: blur(12px);
+}
+.sec-tag { color: var(--green); font-size: 0.72rem; letter-spacing: 2px; margin-bottom: 10px; }
+.sec-title {
+    font-family: var(--head); font-weight: 900; font-size: 1.6rem;
+    letter-spacing: 3px; color: #fff; margin-bottom: 8px;
+}
+.sec-sub { color: #888; font-size: 0.82rem; margin-bottom: 22px; }
+.bots-list { display: grid; gap: 12px; }
+.bot-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px;
+    background: rgba(160,0,255,0.05);
+    border: 1px solid rgba(160,0,255,0.2);
+    border-left: 3px solid var(--green);
+    border-radius: 10px; text-decoration: none; color: #fff;
+    transition: 0.3s; gap: 15px;
+}
+.bot-item:hover {
+    background: rgba(160,0,255,0.15); transform: translateX(5px);
+    box-shadow: 0 0 25px rgba(160,0,255,0.4);
+    border-left-color: var(--neon2);
+}
+.bot-item.deactive { border-left-color: #ff3b3b; }
+.bot-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.bot-name { font-weight: 700; font-size: 0.92rem; letter-spacing: 1px; }
+.bot-user { color: var(--cyan); font-size: 0.75rem; }
+.bot-cat {
+    display: inline-block; padding: 2px 8px;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.4);
+    color: var(--cyan); font-size: 0.62rem;
+    border-radius: 10px; letter-spacing: 1px;
+    width: fit-content; margin-top: 4px;
+}
+.bot-desc { color: #888; font-size: 0.72rem; line-height: 1.4; margin-top: 4px; }
+.bot-status {
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 1px;
+    flex-shrink: 0;
+}
+.bot-status.active {
+    background: rgba(0,255,157,0.15); color: var(--green);
+    border: 1px solid var(--green);
+}
+.bot-status.deactive {
+    background: rgba(255,59,59,0.15); color: #ff3b3b;
+    border: 1px solid #ff3b3b;
+}
+.communities-list {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 15px;
+}
+.community-card {
+    display: block; text-decoration: none;
+    padding: 20px; background: rgba(160,0,255,0.06);
+    border: 1px solid rgba(160,0,255,0.3);
+    border-radius: 12px; transition: 0.3s;
+}
+.community-card:hover {
+    background: rgba(160,0,255,0.15); transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(160,0,255,0.5);
+    border-color: var(--green);
+}
+.community-type {
+    display: inline-block; padding: 3px 10px;
+    background: rgba(0,255,157,0.1);
+    border: 1px solid var(--green);
+    color: var(--green); font-size: 0.62rem;
+    border-radius: 10px; letter-spacing: 1px; margin-bottom: 12px;
+}
+.community-name {
+    font-family: var(--head); font-weight: 700;
+    font-size: 1.1rem; color: #fff; margin-bottom: 10px;
+}
+.community-desc { color: #999; font-size: 0.8rem; line-height: 1.5; margin-bottom: 12px; }
+.community-cta { color: var(--cyan); font-size: 0.78rem; letter-spacing: 1px; }
+.about-card {
+    background: rgba(160,0,255,0.06);
+    border: 1px solid rgba(160,0,255,0.3);
+    border-radius: 12px; padding: 25px; text-align: center;
+}
+.about-avatar {
+    width: 90px; height: 90px; margin: 0 auto 18px;
+    border: 2px solid var(--neon); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--head); font-weight: 900; font-size: 1rem;
+    letter-spacing: 2px; color: var(--green);
+    background: radial-gradient(circle, rgba(160,0,255,0.2), rgba(10,0,21,0.9));
+}
+.about-name {
+    font-family: var(--head); font-size: 1.5rem; font-weight: 900;
+    background: linear-gradient(90deg, var(--neon), var(--neon2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px; letter-spacing: 2px;
+}
+.about-role { color: var(--green); font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 18px; }
+.about-desc { color: #bbb; margin-bottom: 20px; line-height: 1.7; font-size: 0.88rem; }
+.about-links { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.about-line { display: flex; gap: 10px; font-size: 0.85rem; flex-wrap: wrap; justify-content: center; }
+.about-line span { color: #888; letter-spacing: 1px; }
+.about-line a { color: var(--cyan); text-decoration: none; }
+.contact-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 15px;
+}
+.contact-card {
+    display: block; text-decoration: none; padding: 18px;
+    background: rgba(160,0,255,0.06);
+    border: 1px solid rgba(160,0,255,0.3);
+    border-radius: 10px; transition: 0.3s;
+}
+.contact-card:hover {
+    background: rgba(160,0,255,0.15); transform: translateY(-5px);
+    box-shadow: 0 0 25px rgba(160,0,255,0.5);
+    border-color: var(--green);
+}
+.c-label { color: #888; font-size: 0.68rem; letter-spacing: 2px; margin-bottom: 8px; }
+.c-val { color: var(--cyan); font-weight: 700; font-size: 0.9rem; word-break: break-all; }
+.terminal {
+    background: #000; border: 1px solid var(--green);
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 0 30px rgba(0,255,157,0.3);
+}
+.term-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 15px; background: #0a0a0a;
+    border-bottom: 1px solid rgba(0,255,157,0.3);
+}
+.term-header .dot { width: 12px; height: 12px; border-radius: 50%; }
+.term-header .dot.r { background: #ff5f57; }
+.term-header .dot.y { background: #febc2e; }
+.term-header .dot.g { background: #28c840; }
+.term-title { margin-left: auto; color: var(--green); font-size: 0.75rem; }
+.term-body {
+    padding: 18px; min-height: 180px; max-height: 320px;
+    overflow-y: auto; font-size: 0.85rem; line-height: 1.6;
+}
+.term-out { color: var(--green); margin-bottom: 4px; }
+.term-out .cyan { color: var(--cyan); }
+.term-err { color: #ff5f57; }
+.term-info { color: var(--cyan); }
+.term-link { color: var(--cyan); text-decoration: underline; }
+.term-input-line {
+    display: flex; align-items: center;
+    padding: 10px 18px; background: #050505;
+    border-top: 1px solid rgba(0,255,157,0.2);
+}
+.prompt { color: var(--green); margin-right: 10px; font-size: 0.8rem; flex-shrink: 0; }
+#termInput {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--cyan); font-family: var(--mono); font-size: 0.9rem;
+    min-width: 0;
+}
+.footer {
+    text-align: center; padding: 25px;
+    color: #555; font-size: 0.72rem; letter-spacing: 1px;
+}
+@media (max-width: 800px) {
+    .hero { grid-template-columns: 1fr; text-align: center; gap: 25px; padding: 25px 20px; }
+    .hero-right { order: -1; }
+    .hero-handles { justify-content: center; }
+    .avatar-frame { width: 170px; height: 170px; }
+    .text-avatar { font-size: 2.2rem; letter-spacing: 4px; }
+    .main-name { font-size: 2.4rem; letter-spacing: 4px; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .stats-bar .stat:last-child { grid-column: span 2; }
+    .sec-title { font-size: 1.25rem; letter-spacing: 2px; }
+    .nav-links a { font-size: 0.68rem; padding: 5px 8px; }
+    .brand { font-size: 0.85rem; }
+    .bot-item { flex-direction: column; align-items: flex-start; }
+    .section { padding: 22px 16px; }
+}
+</style>
 </head>
 <body data-page="home">
+
 <canvas id="matrix-canvas"></canvas>
 <div class="scanlines-overlay"></div>
 
@@ -20,7 +315,253 @@
     <div id="footer-container"></div>
 </div>
 
-<script src="src/config.js"></script>
-<script src="src/script.js"></script>
+<script>
+/* ============ CONFIG ============ */
+const CONFIG = {
+    profile: {
+        name: "GETO",
+        username: "@ll_DARK_GETO_ll",
+        bio: "#𝐃ᴏɴᴛ_𝐖ᴏʀʀʏ_𝐖ᴇ_𝐀ʀᴇ_𝐓𝐡ᴇ_𝐒𝐭𝐫ᴏɴɢᴇsᴛ_\n#𝐃𝛆𝖋𝛂υℓ𝛕𝛆ɤ𝛅_𝛅𝛂ɤ𝛋𝛂ɤ",
+        status: "● ONLINE"
+    },
+    system: {
+        label: "GETO SYSTEM",
+        terminal: "GETO@TELEGRAM:~$",
+        title: "GETO // TELEGRAM SYSTEM"
+    },
+    about: {
+        description: "Anonymous operator of the GETO Telegram ecosystem. Building and running a network of SUDO bots, AI assistants, group moderation utilities and active communities. Operating in the shadows of the Telegram grid."
+    },
+    social: {
+        telegram: { username: "@ll_DARK_GETO_ll", url: "https://t.me/ll_DARK_GETO_ll" },
+        instagram: { username: "@miyamura_kun07", url: "https://www.instagram.com/miyamura_kun07?stkn=azUxZWR1bHlqd3J5" }
+    },
+    bots: [
+        { id:"sudo-1",  name:"SUDO BOT 1",  username:"@ll_SUPRRME_XD_1_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_1_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-2",  name:"SUDO BOT 2",  username:"@ll_SUPRRME_XD_2_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_2_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-3",  name:"SUDO BOT 3",  username:"@ll_SUPRRME_XD_3_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_3_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-4",  name:"SUDO BOT 4",  username:"@ll_SUPRRME_XD_4_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_4_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-5",  name:"SUDO BOT 5",  username:"@ll_SUPRRME_XD_5_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_5_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-6",  name:"SUDO BOT 6",  username:"@ll_SUPRRME_XD_6_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_6_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-7",  name:"SUDO BOT 7",  username:"@ll_SUPRRME_XD_7_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_7_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-8",  name:"SUDO BOT 8",  username:"@ll_SUPRRME_XD_8_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_8_l_l_BOT", category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-9",  name:"SUDO BOT 9",  username:"@ll_SUPRRME_XD_9_ll_BOT",  url:"https://t.me/ll_SUPRRME_XD_9_ll_BOT",  category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo-10", name:"SUDO BOT 10", username:"@ll_SUPRRME_XD_10_ll_BOT", url:"https://t.me/ll_SUPRRME_XD_10_ll_BOT", category:"SUDO", status:"active", description:"SUDO ecosystem bot under the GETO fleet." },
+        { id:"sudo",    name:"SUDO",      username:"@ll_SUPRRME_XD_ll_BOT", url:"https://t.me/ll_SUPRRME_XD_ll_BOT", category:"SUDO / UTILITY", status:"active", description:"Utility-focused Telegram bot belonging to the SUDO bot ecosystem." },
+        { id:"aiko",    name:"Aiko",      username:"@Aiko07_bot",           url:"https://t.me/Aiko07_bot",           category:"AI BOT", status:"active", description:"A friendly AI-powered Telegram assistant designed to interact with users and provide useful conversational assistance." },
+        { id:"group",   name:"Group Bot", username:"@Groupmodertion_bot",   url:"https://t.me/Groupmodertion_bot",   category:"GROUP HELP BOT", status:"active", description:"A Telegram group assistance bot designed to help communities with moderation and group-management tasks." },
+        { id:"font",    name:"Font Bot",  username:"@CHANGE_THE_FONT_BOT",  url:"https://t.me/CHANGE_THE_FONT_BOT",  category:"FONT CHANGING BOT", status:"active", description:"A Telegram utility bot for transforming normal text into different stylish and decorative font formats." }
+    ],
+    communities: [
+        { name:"SUDO USE",     type:"SUDO USE BOT",                    url:"https://t.me/GETO_SUDO_USE",     description:"Official SUDO ecosystem space for users and community members." },
+        { name:"DO NOT ENTRY", type:"CHATTING GROUP",                  url:"https://t.me/+hp2bEQ4WBNBjMWQ1", description:"A Telegram chatting community for conversation and interaction." },
+        { name:"DEFAULTER",    type:"FIGHTING GROUP AND MY COMMUNITY", url:"https://t.me/+6q5QlKh32L9hNGI1", description:"A community space connected to the DEFAULTER group." }
+    ]
+};
+
+/* ============ HELPERS ============ */
+const uniqueBots = (() => {
+    const seen = new Set();
+    return CONFIG.bots.filter(b => {
+        if (seen.has(b.username)) return false;
+        seen.add(b.username); return true;
+    });
+})();
+const activeCount = uniqueBots.filter(b => b.status === 'active').length;
+const deactiveCount = uniqueBots.filter(b => b.status === 'deactive').length;
+
+function botCard(bot) {
+    return `<a href="${bot.url}" target="_blank" rel="noopener" class="bot-item ${bot.status}">
+        <div class="bot-info">
+            <span class="bot-name">${bot.name}</span>
+            <span class="bot-user">${bot.username}</span>
+            <span class="bot-cat">${bot.category}</span>
+            <span class="bot-desc">${bot.description}</span>
+        </div>
+        <span class="bot-status ${bot.status}">${bot.status.toUpperCase()}</span>
+    </a>`;
+}
+function communityCard(c) {
+    return `<a href="${c.url}" target="_blank" rel="noopener" class="community-card">
+        <span class="community-type">${c.type}</span>
+        <h3 class="community-name">${c.name}</h3>
+        <p class="community-desc">${c.description}</p>
+        <p class="community-cta">→ Open in Telegram</p>
+    </a>`;
+}
+
+/* ============ NAVBAR ============ */
+document.getElementById('navbar-container').innerHTML = `
+<header class="topbar">
+    <div class="logo">
+        <span class="glitch">G</span>
+        <span class="brand">${CONFIG.system.label}</span>
+    </div>
+    <nav class="nav-links">
+        <a href="index.html" class="active">HOME</a>
+        <a href="bots.html">BOTS</a>
+        <a href="communities.html">COMMUNITIES</a>
+        <a href="about.html">ABOUT</a>
+        <a href="contact.html">CONTACT</a>
+    </nav>
+    <div class="status-pill">
+        <span class="dot"></span> <span>${CONFIG.profile.status}</span>
+    </div>
+</header>`;
+
+document.getElementById('footer-container').innerHTML = `
+<footer class="footer">
+    <p>© ${new Date().getFullYear()} ${CONFIG.system.title} • ALL RIGHTS RESERVED</p>
+</footer>`;
+
+/* ============ HOME CONTENT ============ */
+document.getElementById('page-content').innerHTML = `
+<section class="hero">
+    <div class="hero-left">
+        <p class="pre-title">// TELEGRAM ECOSYSTEM • SUDO NETWORK</p>
+        <p class="greet">Hey there, I am</p>
+        <h1 class="main-name">${CONFIG.profile.name}</h1>
+        <p class="subtitle">> Telegram Bot Fleet Operator</p>
+        <p class="desc">${CONFIG.profile.bio.replace(/\n/g, '<br>')}</p>
+        <div class="hero-handles">
+            <a href="${CONFIG.social.telegram.url}" target="_blank"><i class="fab fa-telegram"></i> ${CONFIG.social.telegram.username}</a>
+            <a href="${CONFIG.social.instagram.url}" target="_blank"><i class="fab fa-instagram"></i> ${CONFIG.social.instagram.username}</a>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="avatar-frame">
+            <div class="corner tl"></div><div class="corner tr"></div>
+            <div class="corner bl"></div><div class="corner br"></div>
+            <div class="text-avatar">${CONFIG.profile.name}</div>
+        </div>
+    </div>
+</section>
+
+<section class="stats-bar">
+    <div class="stat"><p class="stat-label">TOTAL BOTS</p><h3 class="stat-val">${uniqueBots.length}</h3></div>
+    <div class="stat"><p class="stat-label">ACTIVE</p><h3 class="stat-val">${activeCount}</h3></div>
+    <div class="stat"><p class="stat-label">DEACTIVATED</p><h3 class="stat-val">${deactiveCount}</h3></div>
+    <div class="stat"><p class="stat-label">SYSTEM</p><h3 class="stat-val">GETO OS</h3></div>
+    <div class="stat"><p class="stat-label">STATUS</p><h3 class="stat-val" style="color:#00ff9d">ONLINE</h3></div>
+</section>
+
+<section class="section">
+    <p class="sec-tag">// BOT NETWORK CLUSTER</p>
+    <h2 class="sec-title">GETO BOTS MATRIX</h2>
+    <p class="sec-sub">Total: ${uniqueBots.length} | Active: ${activeCount} | Deactive: ${deactiveCount}</p>
+    <div class="bots-list">${uniqueBots.map(botCard).join('')}</div>
+</section>
+
+<section class="section">
+    <p class="sec-tag">// COMMUNITY NETWORK</p>
+    <h2 class="sec-title">ACTIVE COMMUNITIES</h2>
+    <p class="sec-sub">Official Telegram communities connected to the GETO network.</p>
+    <div class="communities-list">${CONFIG.communities.map(communityCard).join('')}</div>
+</section>
+
+<section class="section">
+    <p class="sec-tag">// ROOT OPERATOR</p>
+    <h2 class="sec-title">ABOUT ${CONFIG.profile.name}</h2>
+    <div class="about-card">
+        <div class="about-avatar">${CONFIG.profile.name}</div>
+        <h3 class="about-name">${CONFIG.profile.name}</h3>
+        <p class="about-role">TELEGRAM BOT FLEET OPERATOR</p>
+        <p class="about-desc">${CONFIG.about.description}</p>
+        <div class="about-links">
+            <div class="about-line"><span>TELEGRAM:</span><a href="${CONFIG.social.telegram.url}" target="_blank">${CONFIG.social.telegram.username}</a></div>
+            <div class="about-line"><span>INSTAGRAM:</span><a href="${CONFIG.social.instagram.url}" target="_blank">${CONFIG.social.instagram.username}</a></div>
+            <div class="about-line"><span>SUDO HUB:</span><a href="${CONFIG.communities[0].url}" target="_blank">${CONFIG.communities[0].name}</a></div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <p class="sec-tag">// DIRECT COMMS</p>
+    <h2 class="sec-title">CONTACT CHANNELS</h2>
+    <div class="contact-grid">
+        <a href="${CONFIG.social.telegram.url}" target="_blank" class="contact-card"><p class="c-label">TELEGRAM</p><p class="c-val">${CONFIG.social.telegram.username}</p></a>
+        <a href="${CONFIG.social.instagram.url}" target="_blank" class="contact-card"><p class="c-label">INSTAGRAM</p><p class="c-val">${CONFIG.social.instagram.username}</p></a>
+        <a href="${CONFIG.communities[0].url}" target="_blank" class="contact-card"><p class="c-label">SUDO COMMUNITY</p><p class="c-val">${CONFIG.communities[0].name}</p></a>
+        <a href="${CONFIG.communities[2].url}" target="_blank" class="contact-card"><p class="c-label">FIGHTING GROUP</p><p class="c-val">${CONFIG.communities[2].name}</p></a>
+    </div>
+</section>
+
+<section class="section">
+    <p class="sec-tag">// INTERACTIVE SHELL</p>
+    <h2 class="sec-title">GETO BASH CLI</h2>
+    <p class="sec-sub">Try: help, bots, communities, sudo, insta, tg, stats, whoami, clear</p>
+    <div class="terminal">
+        <div class="term-header">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="term-title">${CONFIG.system.terminal}</span>
+        </div>
+        <div class="term-body" id="termBody">
+            <p class="term-out">${CONFIG.system.label} CORE [ONLINE]</p>
+            <p class="term-out">Type <span class="cyan">help</span> or <span class="cyan">bots</span> to begin.</p>
+        </div>
+        <div class="term-input-line">
+            <span class="prompt">${CONFIG.system.terminal}</span>
+            <input type="text" id="termInput" autocomplete="off" spellcheck="false" placeholder="type command...">
+        </div>
+    </div>
+</section>`;
+
+/* ============ TERMINAL ============ */
+const termInput = document.getElementById('termInput');
+const termBody = document.getElementById('termBody');
+termInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const cmd = termInput.value.trim().toLowerCase();
+    if (!cmd) return;
+    const addLine = (text, cls='term-out') => {
+        const p = document.createElement('p');
+        p.className = cls; p.innerHTML = text;
+        termBody.appendChild(p);
+        termBody.scrollTop = termBody.scrollHeight;
+    };
+    addLine(`<span style="color:#00ff9d">${CONFIG.system.terminal}</span> ${cmd}`, 'term-info');
+    termInput.value = '';
+    if (cmd === 'help') addLine('Commands: bots, communities, sudo, insta, tg, stats, whoami, clear');
+    else if (cmd === 'bots') {
+        addLine(`Total: ${uniqueBots.length} | Active: ${activeCount} | Deactive: ${deactiveCount}`);
+        uniqueBots.forEach((b, i) => addLine(`&nbsp;&nbsp;[${i+1}] <span class="cyan">${b.username}</span> — ${b.status.toUpperCase()}`));
+    }
+    else if (cmd === 'communities') CONFIG.communities.forEach((c, i) => addLine(`&nbsp;&nbsp;[${i+1}] <span class="cyan">${c.name}</span> — ${c.type}`));
+    else if (cmd === 'sudo') addLine(`SUDO → <a href="${CONFIG.communities[0].url}" target="_blank" class="term-link">${CONFIG.communities[0].url}</a>`);
+    else if (cmd === 'insta') addLine(`Instagram → <a href="${CONFIG.social.instagram.url}" target="_blank" class="term-link">${CONFIG.social.instagram.url}</a>`);
+    else if (cmd === 'tg') addLine(`Telegram → <a href="${CONFIG.social.telegram.url}" target="_blank" class="term-link">${CONFIG.social.telegram.url}</a>`);
+    else if (cmd === 'stats') addLine(`Total: ${uniqueBots.length} | Active: ${activeCount} | Deactive: ${deactiveCount}`);
+    else if (cmd === 'whoami') addLine(`You are talking to ${CONFIG.profile.name} — ${CONFIG.profile.username}`);
+    else if (cmd === 'clear') termBody.innerHTML = '';
+    else addLine(`Command not found: ${cmd}. Type <span class="cyan">help</span>.`, 'term-err');
+});
+
+/* ============ MATRIX RAIN ============ */
+const canvas = document.getElementById('matrix-canvas');
+const ctx = canvas.getContext('2d');
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+resize();
+addEventListener('resize', resize);
+const chars = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎ0123456789ABCDEF';
+const fontSize = 14;
+let columns = Math.floor(canvas.width / fontSize);
+let drops = Array(columns).fill(1);
+addEventListener('resize', () => {
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array(columns).fill(1);
+});
+setInterval(() => {
+    ctx.fillStyle = 'rgba(5, 0, 10, 0.08)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = fontSize + 'px monospace';
+    for (let i = 0; i < drops.length; i++) {
+        const t = chars.charAt(Math.floor(Math.random() * chars.length));
+        ctx.fillText(t, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+    }
+}, 50);
+</script>
 </body>
 </html>
